@@ -115,6 +115,8 @@ class Command(BaseCommand):
     def home(self, update: Update, context: CallbackContext):
         query = update.callback_query
         query.answer()
+        query.message.delete()
+
         keyboard = InlineKeyboardMarkup([
             [
                 InlineKeyboardButton(Message.MENU_MSG, callback_data=ContextData.MENU)
@@ -125,19 +127,23 @@ class Command(BaseCommand):
             ],
             
         ])
-        query.edit_message_text(Message.HOME_MSG, reply_markup=keyboard, parse_mode="HTML")
+        query.message.reply_html(Message.HOME_MSG, reply_markup=keyboard)
     def about(self, update: Update, context: CallbackContext):
         query = update.callback_query
         query.answer()
+        query.message.delete()
         keyboard = InlineKeyboardMarkup([[InlineKeyboardButton("🔙 Назад", callback_data=ContextData.HOME)]])
-        query.edit_message_text(Message.ABOUT_MSG, reply_markup=keyboard, parse_mode="HTML")
+        query.message.reply_html(Message.ABOUT_MSG, reply_markup=keyboard)
     
 
     
     def meals(self, update: Update, context: CallbackContext):
         query = update.callback_query
         query.answer()
+        query.message.delete()
+        print(query.data.split('menu/'))
         menu_id = int(query.data.split('menu/')[1])
+
         meals = Meal.objects.filter(menu_id=menu_id)
         index = 0
         keyboard = []
@@ -154,27 +160,34 @@ class Command(BaseCommand):
 
         keyboard.append([InlineKeyboardButton("🔙 Назад в главное меню ", callback_data=ContextData.HOME)])
         keyboard.append([InlineKeyboardButton("🔙 Назад ", callback_data=query.data)])
-        query.edit_message_text(Message.HOME_MSG, reply_markup=InlineKeyboardMarkup(keyboard), parse_mode="HTML")
+        query.message.reply_html(Message.HOME_MSG, reply_markup=InlineKeyboardMarkup(keyboard))
 
     def meal(self, update: Update, context: CallbackContext):
         query = update.callback_query
         query.answer()
+        query.message.delete()
         pk = int(query.data.split('/')[-1])
-        menu_data = query.data.split('/')[1] + "/" +query.data.split('/')[1]
+        meals_data = "menu/" + query.data.split('/')[1]
         course = get_meal(id=pk)
         keyboard = InlineKeyboardMarkup([
             [
-                InlineKeyboardButton("Курсга ариза қолдириш", callback_data="application")
+                InlineKeyboardButton("-", callback_data="decr"),
+                InlineKeyboardButton("1", callback_data="count"),
+                InlineKeyboardButton("+", callback_data="incr"),
+            ],
+            [
+                InlineKeyboardButton("🔙 Mенуга қайтиш", callback_data='menu'),
+            ],
+            [
+                InlineKeyboardButton("🔙 Назад", callback_data=meals_data)
             ],
             [
                 InlineKeyboardButton("🔙 Бош менуга қайтиш", callback_data=ContextData.HOME),
-                InlineKeyboardButton("🔙 Mенуга қайтиш", callback_data=menu_data),
-                InlineKeyboardButton("🔙 Орқага", callback_data=menu_data)
             ]
         ])
         image = open(str(settings.MEDIA_ROOT)+f"\\{course.image}", 'rb')
 
-        query.message.reply_photo(photo=image, caption=f"""<b>{course.title}</b>\n\n{course.description}""", parse_mode="HTML", 
+        query.message.reply_photo(photo=image, caption=f"""<b>{course.name}</b>\n\n{course.description}""", parse_mode="HTML", 
             reply_markup=keyboard
         )
 
@@ -182,6 +195,7 @@ class Command(BaseCommand):
         query = update.callback_query
         query.answer()
         if query.data == ContextData.MENU:
+            query.message.delete()
             menus = Menu.objects.all()
             keyboard = []
             index = 0
@@ -196,7 +210,7 @@ class Command(BaseCommand):
                     keyboard[index].append(InlineKeyboardButton(text=name, callback_data=data))
 
             keyboard.append([InlineKeyboardButton("🔙 Назад", callback_data=ContextData.HOME)])
-            query.edit_message_text(Message.HOME_MSG, reply_markup=InlineKeyboardMarkup(keyboard), parse_mode="HTML")
+            query.message.reply_html(Message.HOME_MSG, reply_markup=InlineKeyboardMarkup(keyboard))
         else:
             if len(query.data.split('/')) == 2:
                 self.meals(update, context)
