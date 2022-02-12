@@ -4,6 +4,7 @@ from django.conf import settings
 from telegram import InlineKeyboardButton,  InlineKeyboardMarkup, KeyboardButton, Update, Bot, ReplyKeyboardMarkup
 from telegram.ext import Updater, CommandHandler, CallbackContext, ConversationHandler, MessageHandler, Filters, CallbackQueryHandler
 from telegram.utils.request import Request
+from bot.helpers import Basket
 # end third party packages
 
 # start my packages
@@ -161,19 +162,30 @@ class Command(BaseCommand):
         keyboard.append([InlineKeyboardButton("🔙 Назад в главное меню ", callback_data=ContextData.HOME)])
         keyboard.append([InlineKeyboardButton("🔙 Назад ", callback_data=query.data)])
         query.message.reply_html(Message.HOME_MSG, reply_markup=InlineKeyboardMarkup(keyboard))
+    
+    def amount(self, update: Update, context: CallbackContext):
+        query = update.callback_query
+        query.answer()
 
+
+        
     def meal(self, update: Update, context: CallbackContext):
         query = update.callback_query
         query.answer()
         query.message.delete()
         pk = int(query.data.split('/')[-1])
+        basket = Basket(tg_id=query.from_user.id, product_id=pk)
+        amount = basket.getOrCreateObject()['amount']
         meals_data = "menu/" + query.data.split('/')[1]
         course = get_meal(id=pk)
         keyboard = InlineKeyboardMarkup([
             [
-                InlineKeyboardButton("-", callback_data="decr"),
-                InlineKeyboardButton("1", callback_data="count"),
-                InlineKeyboardButton("+", callback_data="incr"),
+                InlineKeyboardButton("-", callback_data=f"decr/{query.data.split('/')[1]}/{pk}"),
+                InlineKeyboardButton(f"{amount}", callback_data="amount"),
+                InlineKeyboardButton("+", callback_data=f"incr/{query.data.split('/')[1]}/{pk}"),
+            ],
+            [
+                InlineKeyboardButton("Savatga qo'shish", callback_data='amout')
             ],
             [
                 InlineKeyboardButton("🔙 Mенуга қайтиш", callback_data='menu'),
@@ -191,6 +203,13 @@ class Command(BaseCommand):
             reply_markup=keyboard
         )
 
+    def decr(self, update: Update, context: CallbackContext):
+        query = update.callback_query
+        query.answer()
+        basket = Basket(tg_id=query.from_user.id, product_id=pk)
+        besket.decrement()
+        self.meal(update, context)
+    
     def menu(self, update: Update, context: CallbackContext):
         query = update.callback_query
         query.answer()
@@ -213,7 +232,10 @@ class Command(BaseCommand):
             query.message.reply_html(Message.HOME_MSG, reply_markup=InlineKeyboardMarkup(keyboard))
         else:
             if len(query.data.split('/')) == 2:
-                self.meals(update, context)
+                if query.data.split('/')[0] == 'menu':
+                    self.meals(update, context)
+                elif query.data.split('/')[0] == 'decr':
+                    self.decr(update, context)
             else:
                 self.meal(update, context)
     def handle(self, *args, **options):
@@ -236,6 +258,7 @@ class Command(BaseCommand):
                         CommandHandler('start', start),
                         CallbackQueryHandler(self.about , pattern=f"^({ContextData.ABOUT})$"),
                         CallbackQueryHandler(self.home, pattern=f"^({ContextData.HOME})$"),
+                        CallbackQueryHandler(self.amount, pattern="^(amount)$"),
                         # CallbackQueryHandler(self.menu, pattern=f"^({ContextData.MENU})$"),
                         CallbackQueryHandler(self.menu),
                     ]

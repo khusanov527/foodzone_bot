@@ -1,14 +1,1 @@
-[
-    {
-        "user_id":1,
-        "product_id":2,
-        "amount":40000,
-        "sub_price":80000
-    },
-    {
-        "user_id":1,
-        "product_id":1,
-        "amount":25000,
-        "sub_price":25000
-    }
-]
+[{"tg_id": 1, "product_id": 2, "amount": 1, "is_basket": false}]
