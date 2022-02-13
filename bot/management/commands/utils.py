@@ -2,22 +2,22 @@ from bot.models import BotUser, Meal
 
 class Message:
     HOME_MSG = "HOME MSG"
-    ABOUT_MSG = "ABOUT MSG"
-    KORZINKA_MSG = "KORZINKA MSG"
-    MENU_MSG = "MENU MSG"
+    ABOUT_MSG = "🛡 <b>About</b>"
+    KORZINKA_MSG = "📥 <b>Savat:</b>\n\n"
+    MENU_MSG = "📋 <b>Menu</b>"
     MEAL_MSG = "MEAL MSG"
 
 class ButtonText:
     HOME_BUTTON_TEXT = "HOME"
-    ABOUT_BUTTON_TEXT = "ABOUT"
-    KORZINKA_BUTTON_TEXT = "KORZINKA"
-    MENU_BUTTON_TEXT = "MENU"
+    ABOUT_BUTTON_TEXT = "🛡 About"
+    KORZINKA_BUTTON_TEXT = "📥 Savat"
+    MENU_BUTTON_TEXT = "📋 Menu"
     MEAL_BUTTON_TEXT = "MEAL"
 
 class ContextData:    
     ABOUT = "about"
     HOME = "home"
-    KORZINKA = "korzinka"
+    KORZINKA = "basket"
     MENU = "menu"
     MEAL = "meal"
 

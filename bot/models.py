@@ -1,4 +1,3 @@
-from importlib.abc import Traversable
 from django.db import models
 
 # Create your models here.
@@ -37,20 +36,25 @@ class Meal(models.Model):
 
 class OrderItem(models.Model):
     user = models.ForeignKey(BotUser, on_delete=models.RESTRICT)
-    order = models.ForeignKey("Order", on_delete=models.RESTRICT)
+    order = models.ForeignKey("Order", on_delete=models.RESTRICT, null=True, blank=True)
     meal = models.ForeignKey(Meal, on_delete=models.RESTRICT)
-    quantitation = models.SmallIntegerField(default=1)
+    quantitation = models.SmallIntegerField(default=0)
     total_price = models.IntegerField()
-    
+    is_ordered = models.BooleanField(default=False)
+
     @property
     def total_price(self):
         return self.meal.price * self.quantitation
 
+    def __str__(self) -> str:
+        return f"{self.user.get_full_name} {self.meal.name}"
+
 class Order(models.Model):
     user = models.ForeignKey(BotUser, on_delete=models.RESTRICT)
-    total_price = models.IntegerField()
-    address = models.CharField(max_length=255)
+    latitude = models.CharField(max_length=255, null=True)
+    longitude = models.CharField(max_length=255, null=True)
     is_active = models.BooleanField(default=False)
+    
     @property
     def total_price(self):
         orderItems = OrderItem.objects.filter(order_id=self.pk).order_by("pk")
