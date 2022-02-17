@@ -34,7 +34,7 @@ DEBUG = env('DEBUG')
 
 ALLOWED_HOSTS = env('ALLOWED_HOSTS')
 
-POSTGRES = True
+POSTGRES = False
 
 # Application definition
 
@@ -97,7 +97,6 @@ if POSTGRES:
             'HOST': env("DB_HOST"),
             'PORT': env("DB_PORT"),
         }
-
     }
 else:
     DATABASES = {

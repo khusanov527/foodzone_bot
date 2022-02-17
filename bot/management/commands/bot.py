@@ -4,28 +4,31 @@ from django.conf import settings
 from telegram import InlineKeyboardButton,  InlineKeyboardMarkup, InputMediaPhoto, KeyboardButton, Update, Bot, ReplyKeyboardMarkup
 from telegram.ext import Updater, CommandHandler, CallbackContext, ConversationHandler, MessageHandler, Filters, CallbackQueryHandler
 from telegram.utils.request import Request
-from bot.management.commands.func import about, amount, baskets, home, location, menu, sendLocation
+from bot.management.commands.func import about, amount, baskets, ha, home, location, menu, orders, sendLocation, yoq
 # end third party packages
 
 # start my packages
 from bot.management.commands.utils import get_BotUser, Message, ButtonText, get_meal, group_username, ContextData
 # end my packages
 
+keyboard = InlineKeyboardMarkup([
+    [
+        InlineKeyboardButton(ButtonText.MENU_BUTTON_TEXT, callback_data=ContextData.MENU)
+    ],
+    [
+        InlineKeyboardButton(ButtonText.ABOUT_BUTTON_TEXT, callback_data=ContextData.ABOUT),
+        InlineKeyboardButton(ButtonText.KORZINKA_BUTTON_TEXT, callback_data=ContextData.KORZINKA)
+    ],
+    [
+        InlineKeyboardButton("Buyurtmalar tarixi", callback_data="orders")
+    ]
+    
+])
 
 def start(update: Update, context: CallbackContext) -> None:
     user_id = update.message.from_user.id
     user = get_BotUser(user_id)
     if user.is_active:
-        keyboard = InlineKeyboardMarkup([
-            [
-                InlineKeyboardButton(ButtonText.MENU_BUTTON_TEXT, callback_data=ContextData.MENU)
-            ],
-            [
-                InlineKeyboardButton(ButtonText.ABOUT_BUTTON_TEXT, callback_data=ContextData.ABOUT),
-                InlineKeyboardButton(ButtonText.KORZINKA_BUTTON_TEXT, callback_data=ContextData.KORZINKA)
-            ],
-            
-        ])
         update.message.reply_html(Message.HOME_MSG, reply_markup=keyboard)
         return 4
     update.message.reply_html("Введите ваше имя")
@@ -56,16 +59,6 @@ def phonenumber(update: Update, context: CallbackContext) -> None:
     user.phone = update.message.contact.phone_number
     user.is_active = True
     user.save()
-    keyboard = InlineKeyboardMarkup([
-        [
-            InlineKeyboardButton(ButtonText.MENU_BUTTON_TEXT, callback_data=ContextData.MENU)
-        ],
-        [
-            InlineKeyboardButton(ButtonText.ABOUT_BUTTON_TEXT, callback_data=ContextData.ABOUT),
-            InlineKeyboardButton(ButtonText.KORZINKA_BUTTON_TEXT, callback_data=ContextData.KORZINKA)
-        ],
-        
-    ])
     update.message.reply_html(Message.HOME_MSG, reply_markup=keyboard)
     return 4
 
@@ -96,6 +89,10 @@ class Command(BaseCommand):
                         CallbackQueryHandler(amount, pattern="^(amount)$"),
                         CallbackQueryHandler(baskets, pattern="^(basket)$"),
                         CallbackQueryHandler(sendLocation, pattern="^(order)$"),
+                        CallbackQueryHandler(ha, pattern="^(ha)$"),
+                        CallbackQueryHandler(yoq, pattern="^(yoq)$"),
+                        CallbackQueryHandler(orders, pattern="^(orders)$"),
+                        
                         # CallbackQueryHandler(self.menu, pattern=f"^({ContextData.MENU})$"),
                         CallbackQueryHandler(menu),
                     ]

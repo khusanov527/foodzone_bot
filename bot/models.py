@@ -36,7 +36,7 @@ class Meal(models.Model):
 
 class OrderItem(models.Model):
     user = models.ForeignKey(BotUser, on_delete=models.RESTRICT)
-    order = models.ForeignKey("Order", on_delete=models.RESTRICT, null=True, blank=True)
+    order = models.ForeignKey("Order", on_delete=models.SET_NULL, null=True, blank=True)
     meal = models.ForeignKey(Meal, on_delete=models.RESTRICT)
     quantitation = models.SmallIntegerField(default=0)
     total_price = models.IntegerField()

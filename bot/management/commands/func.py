@@ -3,13 +3,14 @@ from django.conf import settings
 from telegram import InlineKeyboardButton,  InlineKeyboardMarkup, InputMediaPhoto, KeyboardButton, ReplyKeyboardMarkup, Update
 from telegram.ext import CallbackContext
 from bot.helpers import Data
-from django.db import transaction
 # end third party packages
 
 # start my packages
 from bot.models import Meal, Menu, Order, OrderItem
 from bot.management.commands.utils import Message, ButtonText, get_BotUser, get_meal, group_username, ContextData
 # end my packages
+
+
 
 def home(update: Update, context: CallbackContext):
     query = update.callback_query
@@ -23,6 +24,9 @@ def home(update: Update, context: CallbackContext):
             InlineKeyboardButton(ButtonText.ABOUT_BUTTON_TEXT, callback_data=ContextData.ABOUT),
             InlineKeyboardButton(ButtonText.KORZINKA_BUTTON_TEXT, callback_data=ContextData.KORZINKA)
         ],
+        [
+            InlineKeyboardButton("Buyurtmalar tarixi", callback_data="orders")
+        ]
         
     ])
     query.message.reply_text(Message.HOME_MSG, reply_markup=keyboard, parse_mode="HTML")
@@ -31,7 +35,6 @@ def about(update: Update, context: CallbackContext):
     query.answer()
     keyboard = InlineKeyboardMarkup([[InlineKeyboardButton("🔙 Orqaga", callback_data=ContextData.HOME)]])
     query.edit_message_text(Message.ABOUT_MSG, reply_markup=keyboard, parse_mode="HTML")
-
 def meals(update: Update, context: CallbackContext):
     query = update.callback_query
     query.answer()
@@ -56,23 +59,20 @@ def meals(update: Update, context: CallbackContext):
     keyboard.append([InlineKeyboardButton("🔙 Bosh menyuga qaytish ", callback_data=ContextData.HOME)])
     keyboard.append([InlineKeyboardButton("🔙 Orqaga ", callback_data=ContextData.MENU)])
     query.message.reply_text(Message.HOME_MSG, reply_markup=InlineKeyboardMarkup(keyboard), parse_mode="HTML")
-
 def amount(update: Update, context: CallbackContext):
     query = update.callback_query
     query.answer()
-
 def addBasket(update: Update, context: CallbackContext):    
     query = update.callback_query
     query.answer(text=f'Savatga qo\'shildi ✅', show_alert=True)
     user = get_BotUser(tg_id=query.from_user.id)
     if user:
         pk=int(query.data.split('/')[-1])
-        orderItem = OrderItem.objects.get_or_create(user=user, meal_id=pk)[0]
+        orderItem = OrderItem.objects.get_or_create(user=user, meal_id=pk, is_ordered=False)[0]
         data = Data(tg_id=query.from_user.id, product_id=pk)
         orderItem.quantitation += data.getOrCreateObject().get('data').get('amount')
         orderItem.save()
     meal(update, context)    
-    
 def meal(update: Update, context: CallbackContext, setOne:bool=True):
     query = update.callback_query
     query.answer()
@@ -123,7 +123,6 @@ def meal(update: Update, context: CallbackContext, setOne:bool=True):
             ),
             reply_markup=keyboard
         )
-
 def decr(update: Update, context: CallbackContext):
     query = update.callback_query
     query.answer()
@@ -131,7 +130,6 @@ def decr(update: Update, context: CallbackContext):
     data = Data(tg_id=query.from_user.id, product_id=pk)
     data.decrement()
     meal(update, context, setOne=False)
-
 def incr(update: Update, context: CallbackContext):
     query = update.callback_query
     query.answer()
@@ -139,7 +137,6 @@ def incr(update: Update, context: CallbackContext):
     data = Data(tg_id=query.from_user.id, product_id=pk)
     data.increment()
     meal(update, context, setOne=False)
-
 def menu(update: Update, context: CallbackContext):
     query = update.callback_query
     if query.data == ContextData.MENU:
@@ -181,7 +178,6 @@ def menu(update: Update, context: CallbackContext):
                 addBasket(update, context)
             else:
                 meal(update, context)
-
 def b_decr(update: Update, context: CallbackContext):
     print("b-decr")
     query = update.callback_query
@@ -195,7 +191,6 @@ def b_decr(update: Update, context: CallbackContext):
     else:
         orderItem.delete()
     baskets(update, context)
-
 def b_incr(update: Update, context: CallbackContext):
     print("b-incr")
     query = update.callback_query
@@ -206,7 +201,6 @@ def b_incr(update: Update, context: CallbackContext):
     orderItem.quantitation = orderItem.quantitation + 1
     orderItem.save()
     baskets(update, context)
-
 def b_delete(update: Update, context: CallbackContext):
     print('b-delete')
     query = update.callback_query
@@ -216,7 +210,6 @@ def b_delete(update: Update, context: CallbackContext):
     orderItem = OrderItem.objects.filter(user=user, is_ordered=False, meal_id=pk).last()
     orderItem.delete()
     baskets(update, context)
-
 def baskets(update: Update, context: CallbackContext):
     query = update.callback_query
     query.answer()
@@ -226,9 +219,11 @@ def baskets(update: Update, context: CallbackContext):
     keyboard = []
     if orderItems:
         i = 0
+        totalsum = 0
         for orderItem in orderItems:
             i+=1
             text += f"<b>{i}. {orderItem.meal.name}</b>\n  {orderItem.quantitation} x {orderItem.meal.price} = <b>{orderItem.total_price} so'm</b>\n"
+            totalsum += orderItem.total_price
             keyboard.append([
                 InlineKeyboardButton(f"❌ {orderItem.meal.name}", callback_data=f"d-basket/{orderItem.meal.id}")
             ])
@@ -240,13 +235,13 @@ def baskets(update: Update, context: CallbackContext):
         keyboard.append([
             InlineKeyboardButton(f"Buyurtma berish", callback_data="order")
         ])
+        text+=f"\nUmumiy narxi: <b>{totalsum}</b> so'm"
     else:
         text += "<i>Hozirda savatda hech narsa yo'q</i>"
     keyboard.append([
         InlineKeyboardButton(f"Bosh menyuga qaytish", callback_data=ContextData.HOME)
     ])
     query.edit_message_text(text, reply_markup=InlineKeyboardMarkup(keyboard), parse_mode="HTML")
-
 def sendLocation(update: Update, context: CallbackContext):
     query = update.callback_query
     query.answer()
@@ -254,7 +249,6 @@ def sendLocation(update: Update, context: CallbackContext):
         text="Manzilingizni yuboring",
         reply_markup=ReplyKeyboardMarkup([[KeyboardButton('Manzilni yuborish', request_location=True)]], resize_keyboard=True)
     )
-
 def location(update: Update, context: CallbackContext):
     message = None
     if update.edited_message:
@@ -276,9 +270,54 @@ def location(update: Update, context: CallbackContext):
         orderItem.order = order
         orderItem.is_ordered = True
         orderItem.save()
-    keyboard = InlineKeyboardMarkup([
+    keyboard = [
         [
-            InlineKeyboardButton("Bosh menyuga qaytish", callback_data=ContextData.MENU)
-        ],
-    ])
-    update.message.reply_html("Buyurtmangiz qabul qilindi", reply_markup=keyboard)
+            InlineKeyboardButton("Ha", callback_data=f"ha"),
+            InlineKeyboardButton("Yo'q", callback_data=f"yoq"),
+        ]
+    ]
+    update.message.reply_html("Buyurtmani tasdiqlaysizmi", reply_markup=InlineKeyboardMarkup(keyboard))
+def ha(update: Update, context: CallbackContext):
+    query = update.callback_query
+    query.answer()
+    user = get_BotUser(tg_id=query.from_user.id)
+    order = Order.objects.filter(user=user, is_active=False).order_by('-pk').first()
+    order.is_active = True
+    order.save()
+    query.edit_message_text("Buyurtmaniz qabul qilindi", reply_markup=InlineKeyboardMarkup(
+        [
+            [InlineKeyboardButton('Bosh menyuga qaytish', callback_data=ContextData.HOME)]
+        ]
+    ))
+def yoq(update: Update, context: CallbackContext):
+    query = update.callback_query
+    query.answer()
+    user = get_BotUser(tg_id=query.from_user.id)
+    orders = Order.objects.filter(user=user, is_active=False).order_by('-pk')
+    for order in orders:
+        order.delete()
+    query.edit_message_text("Buyurtmaniz qabul bekor qilindi", reply_markup=InlineKeyboardMarkup(
+        [
+            [InlineKeyboardButton('Bosh menyuga qaytish', callback_data=ContextData.HOME)]
+        ]
+    ))    
+
+def orders(update: Update, context: CallbackContext):
+    query = update.callback_query
+    query.answer()
+    user = get_BotUser(tg_id=query.from_user.id)
+    orders = Order.objects.filter(user=user, is_active=True).order_by("-pk")
+    text = "<b>Buyurtmalar Tarixi</b>\n\n"
+    if orders:
+        index = 0
+        for order in orders:
+            index += 1
+            indexOrderItem = 0
+            orderItems = OrderItem.objects.filter(order=order).order_by('pk')
+            text += f"<b>{index}</b>. Buyurtma raqami {order.id}\n"
+            for orderItem in orderItems:
+                indexOrderItem += 1
+                text += f"  {indexOrderItem}. <b>{orderItem.meal.name}</b> - {orderItem.meal.price} x {orderItem.quantitation} = {orderItem.total_price} so'm\n"
+            else:
+                text+="\n"
+    query.edit_message_text(text=text, reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("Orqaga", callback_data=ContextData.HOME)]]), parse_mode="HTML")

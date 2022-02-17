@@ -56,9 +56,9 @@ class Data:
             if basket[i].get('tg_id') == self.tg_id and basket[i].get('product_id') == self.product_id:
                 basket[i]['amount'] = 1        
         self.writeJson(basket)
-
-class Basket:
-    def __init__(self, tg_id, product_id):
-        self.tg_id = tg_id
-        self.product_id = product_id
-        self.fileAddress = settings.BASE_DIR / 'bot/data.json'
+    def delete(self):
+        basket = self.data
+        for i in range(len(basket)):
+            if basket[i].get('tg_id') == self.tg_id and basket[i].get('product_id') == self.product_id:
+                del basket[i]
+        self.writeJson(basket)
