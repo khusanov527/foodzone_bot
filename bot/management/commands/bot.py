@@ -20,18 +20,17 @@ keyboard = InlineKeyboardMarkup([
         InlineKeyboardButton(ButtonText.KORZINKA_BUTTON_TEXT, callback_data=ContextData.KORZINKA)
     ],
     [
-        InlineKeyboardButton("Buyurtmalar tarixi", callback_data="orders")
+        InlineKeyboardButton("📜 Buyurtmalar tarixi", callback_data="orders")
     ]
     
 ])
-
 def start(update: Update, context: CallbackContext) -> None:
     user_id = update.message.from_user.id
     user = get_BotUser(user_id)
     if user.is_active:
         update.message.reply_html(Message.HOME_MSG, reply_markup=keyboard)
         return 4
-    update.message.reply_html("Введите ваше имя")
+    update.message.reply_html("Ismingizni kiriting")
     return 1
 
 def first_name(update: Update, context: CallbackContext) -> None:
@@ -39,18 +38,10 @@ def first_name(update: Update, context: CallbackContext) -> None:
     user = get_BotUser(user_id)
     user.first_name = update.message.text
     user.save()
-    update.message.reply_html("Введите вашу фамилию")
-    return 2
 
-def last_name(update: Update, context: CallbackContext) -> None:
-    user_id = update.message.from_user.id
-    user = get_BotUser(user_id)
-    user.last_name = update.message.text
-    user.save()
-
-    reply_markup = ReplyKeyboardMarkup([[KeyboardButton('Поделиться контактом', request_contact=True)]],
+    reply_markup = ReplyKeyboardMarkup([[KeyboardButton('📲 Kontaktni jo\'natish', request_contact=True)]],
                                             resize_keyboard=True)
-    update.message.reply_html("Отправьте свой номер телефона", reply_markup=reply_markup)
+    update.message.reply_html("📲 Telefon nomeringizni yuboring", reply_markup=reply_markup)
     return 3
 
 def phonenumber(update: Update, context: CallbackContext) -> None:
@@ -102,10 +93,6 @@ class Command(BaseCommand):
                     1: [
                         CommandHandler('start', start),
                         MessageHandler(Filters.text, first_name),
-                    ],
-                    2: [
-                        CommandHandler('start', start),
-                        MessageHandler(Filters.text, last_name)
                     ],
                     3: [
                         CommandHandler('start', start),

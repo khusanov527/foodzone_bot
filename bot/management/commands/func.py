@@ -9,7 +9,11 @@ from bot.helpers import Data
 from bot.models import Meal, Menu, Order, OrderItem
 from bot.management.commands.utils import Message, ButtonText, get_BotUser, get_meal, group_username, ContextData
 # end my packages
-
+import logging
+logging.basicConfig(
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s', level=logging.INFO
+)
+logger = logging.getLogger(__name__)
 
 
 def home(update: Update, context: CallbackContext):
@@ -25,7 +29,7 @@ def home(update: Update, context: CallbackContext):
             InlineKeyboardButton(ButtonText.KORZINKA_BUTTON_TEXT, callback_data=ContextData.KORZINKA)
         ],
         [
-            InlineKeyboardButton("Buyurtmalar tarixi", callback_data="orders")
+            InlineKeyboardButton("📜 Buyurtmalar tarixi", callback_data="orders")
         ]
         
     ])
@@ -33,15 +37,19 @@ def home(update: Update, context: CallbackContext):
 def about(update: Update, context: CallbackContext):
     query = update.callback_query
     query.answer()
-    keyboard = InlineKeyboardMarkup([[InlineKeyboardButton("🔙 Orqaga", callback_data=ContextData.HOME)]])
-    query.edit_message_text(Message.ABOUT_MSG, reply_markup=keyboard, parse_mode="HTML")
+    keyboard = InlineKeyboardMarkup([
+        [InlineKeyboardButton("📍 Lokatsiya", url="https://goo.gl/maps/MqCLdXD613zgj3cVA")],
+        [InlineKeyboardButton("🔙 Orqaga", callback_data=ContextData.HOME)]
+    ])
+    query.edit_message_text("<b>Biz haqimizda</b>:\nMenyu asosan klub sendvichlari, hot-doglar, gamburgerlar, pitsa  va donorlardan iborat. Fast foodlarning  xilma-xilligi, maqbul narxlar va mehmonlarning talabiga e'tibor berish bizning ustuvor vazifalarimizdir. " \
+        "\n<a href='https://www.instagram.com/foodzone_uz'>Instagram</a>\n<a href='https://www.facebook.com/foodzoneuzb'>Facebook</a>",  reply_markup=keyboard, parse_mode="HTML")
 def meals(update: Update, context: CallbackContext):
     query = update.callback_query
     query.answer()
     query.message.delete()
     print(query.data.split('menu/'))
     menu_id = int(query.data.split('menu/')[1])
-
+    menu = Menu.objects.get(id=menu_id)
     meals = Meal.objects.filter(menu_id=menu_id)
     index = 0
     keyboard = []
@@ -58,7 +66,7 @@ def meals(update: Update, context: CallbackContext):
 
     keyboard.append([InlineKeyboardButton("🔙 Bosh menyuga qaytish ", callback_data=ContextData.HOME)])
     keyboard.append([InlineKeyboardButton("🔙 Orqaga ", callback_data=ContextData.MENU)])
-    query.message.reply_text(Message.HOME_MSG, reply_markup=InlineKeyboardMarkup(keyboard), parse_mode="HTML")
+    query.message.reply_text(f"<b>{menu.name}</b>", reply_markup=InlineKeyboardMarkup(keyboard), parse_mode="HTML")
 def amount(update: Update, context: CallbackContext):
     query = update.callback_query
     query.answer()
@@ -320,4 +328,6 @@ def orders(update: Update, context: CallbackContext):
                 text += f"  {indexOrderItem}. <b>{orderItem.meal.name}</b> - {orderItem.meal.price} x {orderItem.quantitation} = {orderItem.total_price} so'm\n"
             else:
                 text+="\n"
+    else:
+        text += "<i>Siz bizni botimiz orqali buyurtmalar amalga oshirmagansiz</i>"
     query.edit_message_text(text=text, reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("Orqaga", callback_data=ContextData.HOME)]]), parse_mode="HTML")
