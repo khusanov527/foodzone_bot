@@ -54,7 +54,7 @@ class Order(models.Model):
     latitude = models.CharField(max_length=255, null=True)
     longitude = models.CharField(max_length=255, null=True)
     is_active = models.BooleanField(default=False)
-    
+    create_at = models.DateTimeField(auto_now_add=True, null=True)
     @property
     def total_price(self):
         orderItems = OrderItem.objects.filter(order_id=self.pk).order_by("pk")

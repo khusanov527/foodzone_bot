@@ -1,4 +1,5 @@
 # start third party packages
+import os
 from django.conf import settings
 from telegram import InlineKeyboardButton,  InlineKeyboardMarkup, InputMediaPhoto, KeyboardButton, ReplyKeyboardMarkup, Update
 from telegram.ext import CallbackContext
@@ -112,7 +113,8 @@ def meal(update: Update, context: CallbackContext, setOne:bool=True):
             InlineKeyboardButton("🔙 Bosh menyuga qaytish", callback_data=ContextData.HOME),
         ]
     ])
-    image = open(str(settings.MEDIA_ROOT)+f"\\{meal.image}", 'rb')
+    
+    image = open(str(os.path.join(settings.MEDIA_ROOT, meal.image)), 'rb')
     print(setOne)
     if setOne:
         query.message.delete()
@@ -292,11 +294,22 @@ def ha(update: Update, context: CallbackContext):
     order = Order.objects.filter(user=user, is_active=False).order_by('-pk').first()
     order.is_active = True
     order.save()
+    i = 0
+    totalsum = 0
     query.edit_message_text("Buyurtmaniz qabul qilindi", reply_markup=InlineKeyboardMarkup(
         [
             [InlineKeyboardButton('Bosh menyuga qaytish', callback_data=ContextData.HOME)]
         ]
     ))
+    text = f"<b>{order.user.first_name}</b> - <a href='{order.user.phone}'>{order.user.phone}</a>\n"
+    orderItems = OrderItem.objects.filter(order=order)
+    for orderItem in orderItems:
+        i+=1
+        text += f"<b>{i}. {orderItem.meal.name}</b>\n  {orderItem.quantitation} x {orderItem.meal.price} = <b>{orderItem.total_price} so'm</b>\n"
+        totalsum += orderItem.total_price
+    text += f"\n Vaqti: {order.create_at}"
+    context.bot.send_location(chat_id=-1789984707, latitude=order.latitude, longitude=order.longitude)
+    context.bot.send_message(chat_id=-1789984707, parse_mode="html", text="")
 def yoq(update: Update, context: CallbackContext):
     query = update.callback_query
     query.answer()
